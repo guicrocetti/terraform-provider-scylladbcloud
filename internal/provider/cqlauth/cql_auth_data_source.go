@@ -49,6 +49,11 @@ func DataSourceCQLAuth() *schema.Resource {
 				Computed:    true,
 				Optional:    true,
 			},
+			"name": {
+				Description: "Cluster name",
+				Computed:    true,
+				Type:        schema.TypeString,
+			},
 			"dns": {
 				Description: "Use DNS names for seeds",
 				Optional:    true,
@@ -83,6 +88,11 @@ func dataSourceCQLAuthRead(ctx context.Context, d *schema.ResourceData, meta int
 		dns       = d.Get("dns").(bool)
 	)
 
+	cluster, err := c.GetCluster(ctx, clusterID)
+	if err != nil {
+		return diag.Errorf("error reading cluster: %s", err)
+	}
+
 	conn, err := c.Connect(ctx, clusterID)
 	if err != nil {
 		return diag.Errorf("error reading connection details: %s", err)
@@ -99,6 +109,8 @@ func dataSourceCQLAuthRead(ctx context.Context, d *schema.ResourceData, meta int
 	}
 
 	d.SetId(seeds)
+	_ = d.Set("cluster_id", cluster.ID)
+	_ = d.Set("name", cluster.ClusterName)
 	_ = d.Set("datacenter", dc.Name)
 	_ = d.Set("username", conn.Credentials.Username)
 	_ = d.Set("password", conn.Credentials.Password)
